@@ -61,11 +61,26 @@ let maxPageNum = 1;
                 return links
             })
 
+            console.log(userLinks)
+            
+            for(const userLink of userLinks) {
+                page.goto(`https://stackoverflow.com/${userLink}`)
+
+                let username = "unknown"
+                let job = "unknown"
+                let klarName = "unknown"
+
+                const usernameSelector = await page.waitForSelector('.fs-headline2')
+                username = await usernameSelector?.evaluate(el => el.textContent);
+                const jobSelector = await page.waitForSelector('.fs-title')
+                job = await jobSelector?.evaluate(el => el.textContent);
+                console.log(`${username.trim()} ${job.trim()} ${klarName.trim()}`)
+            }
             
         }
     await timeout(5000)
     }
-    
+
     // close Browser after 5 sec
     timeout(3000)
     await browser.close()
