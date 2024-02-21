@@ -46,7 +46,6 @@ let maxPageNum = 1;
             const pageButtons = document.querySelectorAll('.s-pagination--item')
             return Number(pageButtons[10].textContent)
         })
-
         while(pageNum <= maxPageNum) {
             await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`)
             
@@ -63,8 +62,6 @@ let maxPageNum = 1;
             for(const userLink of userLinks) {
                 await page.goto(`https://stackoverflow.com/${userLink}`)
 
-                console.log(count)
-                
                 const username = await page.evaluate(() => {
                     if(document.querySelector('.flex--item.mb12.fs-headline2.lh-xs')) 
                         return document.querySelector('.flex--item.mb12.fs-headline2.lh-xs').textContent.trim()
@@ -82,13 +79,14 @@ let maxPageNum = 1;
                 })
 
                 users.push({ username: username, ort: ort, job: job })
-                console.log(count)
+                // console.log(count)
                 count++
                 if(count > 5) break;
             }
-            
+            if(count > 5) break;
         }
-    await timeout(5000)
+        console.log(users)
+        await timeout(5000)
     }
 
     // close Browser after 5 sec
