@@ -69,12 +69,12 @@ let maxPageNum = 1;
                 })
                 const job = await page.evaluate(() => {
                     if(document.querySelector('.mb8.fc-black-400.fs-title.lh-xs')) 
-                        return document.querySelector('.flex--item.mb12.fs-headline2.lh-xs').textContent.trim()
+                        return document.querySelector('.mb8.fc-black-400.fs-title.lh-xs').textContent.trim()
                     return null
                 })
                 const ort = await page.evaluate(() => {
                     if(document.querySelector('.wmx2.truncate')) 
-                        return document.querySelector('.flex--item.mb12.fs-headline2.lh-xs').textContent.trim()
+                        return document.querySelector('.wmx2.truncate').textContent.trim()
                     return null
                 })
 
