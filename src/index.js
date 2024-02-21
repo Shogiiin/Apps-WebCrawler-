@@ -78,6 +78,7 @@ let maxPageNum = 1;
                     return null
                 })
 
+                if(users.filter(e => e.username === username).length > 0) continue
                 users.push({ username: username, ort: ort, job: job })
                 // console.log(count)
                 count++
@@ -85,6 +86,7 @@ let maxPageNum = 1;
             }
             if(count > 5) break;
         }
+        console.log(`Tag : ${tag} :`)
         console.log(users)
         await timeout(5000)
     }
