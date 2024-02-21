@@ -34,7 +34,7 @@ let maxPageNum = 1;
     //cycle through all tags the user has selected
     for(const tag of tagList) {
         // create array for user data
-        // template** users.push({ username: '', klarName: '', job: '' })
+        // template** users.push({ username: '', ort: '', job: '' })
         const users = []
 
         pageNum = 1
@@ -46,7 +46,6 @@ let maxPageNum = 1;
             const pageButtons = document.querySelectorAll('.s-pagination--item')
             return Number(pageButtons[10].textContent)
         })
-        console.log(maxPageNum)
 
         while(pageNum <= maxPageNum) {
             await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`)
@@ -60,21 +59,32 @@ let maxPageNum = 1;
                 }
                 return links
             })
-
-            console.log(userLinks)
-            
+            let count = 0
             for(const userLink of userLinks) {
-                page.goto(`https://stackoverflow.com/${userLink}`)
+                await page.goto(`https://stackoverflow.com/${userLink}`)
 
-                let username = "unknown"
-                let job = "unknown"
-                let klarName = "unknown"
+                console.log(count)
+                
+                const username = await page.evaluate(() => {
+                    if(document.querySelector('.flex--item.mb12.fs-headline2.lh-xs')) 
+                        return document.querySelector('.flex--item.mb12.fs-headline2.lh-xs').textContent.trim()
+                    return null
+                })
+                const job = await page.evaluate(() => {
+                    if(document.querySelector('.mb8.fc-black-400.fs-title.lh-xs')) 
+                        return document.querySelector('.flex--item.mb12.fs-headline2.lh-xs').textContent.trim()
+                    return null
+                })
+                const ort = await page.evaluate(() => {
+                    if(document.querySelector('.wmx2.truncate')) 
+                        return document.querySelector('.flex--item.mb12.fs-headline2.lh-xs').textContent.trim()
+                    return null
+                })
 
-                const usernameSelector = await page.waitForSelector('.fs-headline2')
-                username = await usernameSelector?.evaluate(el => el.textContent);
-                const jobSelector = await page.waitForSelector('.fs-title')
-                job = await jobSelector?.evaluate(el => el.textContent);
-                console.log(`${username.trim()} ${job.trim()} ${klarName.trim()}`)
+                users.push({ username: username, ort: ort, job: job })
+                console.log(count)
+                count++
+                if(count > 5) break;
             }
             
         }
