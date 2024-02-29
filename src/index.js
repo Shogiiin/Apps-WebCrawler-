@@ -83,7 +83,7 @@ function writeToCSV(filePath, data) {
                 if(ele.innerHTML.includes('hour') || ele.innerHTML.includes('day')) {
                     dateArray = Date()
                 } else {
-                    
+
                 }
 
                 // dateArray = [date.getDate(), Number(date.getMonth()+1), date.getFullYear()]
@@ -110,30 +110,30 @@ function writeToCSV(filePath, data) {
             for (const userLink of userLinks) {
                 if (users.length >= 4) break;
 
-                // await page.goto(`https://stackoverflow.com/${userLink}`);
+                await page.goto(`https://stackoverflow.com/${userLink}`);
 
-                // const username = await page.evaluate(() => {
-                //     const usernameElement = document.querySelector('.flex--item.mb12.fs-headline2.lh-xs');
-                //     return usernameElement ? usernameElement.textContent.trim() : null;
-                // });
+                const username = await page.evaluate(() => {
+                    const usernameElement = document.querySelector('.flex--item.mb12.fs-headline2.lh-xs');
+                    return usernameElement ? usernameElement.textContent.trim() : null;
+                });
 
-                // const job = await page.evaluate(() => {
-                //     const jobElement = document.querySelector('.mb8.fc-black-400.fs-title.lh-xs');
-                //     return jobElement ? jobElement.textContent.trim() : 'NULL';
-                // });
+                const job = await page.evaluate(() => {
+                    const jobElement = document.querySelector('.mb8.fc-black-400.fs-title.lh-xs');
+                    return jobElement ? jobElement.textContent.trim() : 'NULL';
+                });
 
-                // const ort = await page.evaluate(() => {
-                //     const ortElement = document.querySelector('.wmx2.truncate');
-                //     return ortElement ? ortElement.textContent.trim() : 'NULL';
-                // });
-                // if(ort.toLowerCase().includes('germany')) continue;
+                const ort = await page.evaluate(() => {
+                    const ortElement = document.querySelector('.wmx2.truncate');
+                    return ortElement ? ortElement.textContent.trim() : 'NULL';
+                });
+                if(ort.toLowerCase().includes('germany')) continue;
 
-                // // Überprüfen, ob Benutzer bereits existiert
-                // const userExists = users.find(user => user.username === username && user.ort === ort && user.job === job);
-                // if (!userExists) {
-                //     // Benutzerdaten zum Array hinzufügen
-                //     users.push({ username: username || 'NULL', ort: ort || 'NULL', job: job || 'NULL' });
-                // }
+                // Überprüfen, ob Benutzer bereits existiert
+                const userExists = users.find(user => user.username === username && user.ort === ort && user.job === job);
+                if (!userExists) {
+                    // Benutzerdaten zum Array hinzufügen
+                    users.push({ username: username || 'NULL', ort: ort || 'NULL', job: job || 'NULL' });
+                }
             }
 
             pageNum++;
