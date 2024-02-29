@@ -1,207 +1,82 @@
-const puppeteer = require('puppeteer')
+const puppeteer = require('puppeteer');
 const fs = require('fs');
 
 const tagList = [
     'apex',
     'salesforce',
-]
-
+];
 
 console.log('start');
 
-// create own timeout function cause js's is ...
-function timeout(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-let pageNum = 1;
-let maxPageNum = 1;
-
+// Hauptfunktion
 (async () => {
+    const browser = await puppeteer.launch({ headless: false });
+    const page = await browser.newPage();
 
-    // Launch the browser and open a new blank page
-    const browser = await puppeteer.launch({ headless: true })
-    const page = await browser.newPage()
-
-    await page.goto('https://stackoverflow.com')
-
-    //check if cloudflare is active
-    await page.waitForSelector('body')
-    if(await page.evaluate(() => {
-        const documentBody = document.querySelector('body')
-        // if(documentBody.className == "no-js") return true
-        return documentBody.classList.contains("no-js")
-    })) {
-        console.error('Cloudflare kicked in.')
-        await browser.close()
-        return
-    }
-
-    // accept cookies :)
-    await page.waitForSelector('#onetrust-accept-btn-handler')
-    await page.click('#onetrust-accept-btn-handler')
-    // await page.waitForNavigation({waitUntil: 'networkidle2'})
-    // await page.click('#onetrust-accept-btn-handler')
-
-
-    //cycle through all tags the user has selected
+    // Durchlauf für jede Tagliste
     for(const tag of tagList) {
-        // create array for user data
-        // template** users.push({ username: '', ort: '', job: '' })
-        const users = []
+        const usersFilePath = `Output/users-${tag}.csv`;
+        let users = [];
 
-        pageNum = 1
-        maxPageNum = 1
+        let pageNum = 1;
+        let maxPageNum = 1;
 
+        await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`);
 
-        await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=1&pagesize=50`)
+        maxPageNum = await page.evaluate(() => {
+            const pageButtons = document.querySelectorAll('.s-pagination--item');
+            return Number(pageButtons[10].textContent);
+        });
 
-        //check if cloudflare is active
-        await page.waitForSelector('body')
-        if(await page.evaluate(() => {
-            const documentBody = document.querySelector('body')
-            // if(documentBody.className == "no-js") return true
-            return documentBody.classList.contains("no-js")
-        })) {
-            console.error('Cloudflare kicked in.')
-            await browser.close()
-            return
-        }
+        while (pageNum <= maxPageNum && users.length < 4) {
+            await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`);
 
-        maxPageNum = await page.evaluate((pageNum) => {
-            const pageButtons = document.querySelectorAll('.s-pagination--item')
-            return Number(pageButtons[10].textContent)
-        })
-        while(pageNum <= maxPageNum) {
-            await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`)
-
-            //check if cloudflare is active
-            await page.waitForSelector('body')
-            if(await page.evaluate(() => {
-                const documentBody = document.querySelector('body')
-                // if(documentBody.className == "no-js") return true
-                return documentBody.classList.contains("no-js")
-            })) {
-                console.error('Cloudflare kicked in.')
-                await browser.close()
-                return
-            }
-            
             const userLinks = await page.evaluate(() => {
-                const userElements = document.querySelectorAll('.s-avatar')
-                const links = []
-                for(const ele of userElements) {
-                    if(String(ele.getAttribute('href')).includes('users'))
-                        links.push(ele.getAttribute('href'))
+                const userElements = document.querySelectorAll('.s-avatar');
+                const links = [];
+                for (const ele of userElements) {
+                    if (String(ele.getAttribute('href')).includes('users'))
+                        links.push(ele.getAttribute('href'));
                 }
-                return links
-            })
-            let count = 0
-            for(const userLink of userLinks) {
-                await page.goto(`https://stackoverflow.com/${userLink}`)
+                return links;
+            });
 
-                //check if cloudflare is active
-                await page.waitForSelector('body')
-                if(await page.evaluate(() => {
-                    const documentBody = document.querySelector('body')
-                    // if(documentBody.className == "no-js") return true
-                    return documentBody.classList.contains("no-js")
-                })) {
-                    console.error('Cloudflare kicked in.')
-                    await browser.close()
-                    return
-                }
+            for (const userLink of userLinks) {
+                if (users.length >= 4) break;
+
+                await page.goto(`https://stackoverflow.com/${userLink}`);
 
                 const username = await page.evaluate(() => {
-                    if(document.querySelector('.flex--item.mb12.fs-headline2.lh-xs')) 
-                        return document.querySelector('.flex--item.mb12.fs-headline2.lh-xs').textContent.trim()
-                    return null
-                })
+                    const usernameElement = document.querySelector('.flex--item.mb12.fs-headline2.lh-xs');
+                    return usernameElement ? usernameElement.textContent.trim() : null;
+                });
+
                 const job = await page.evaluate(() => {
-                    if(document.querySelector('.mb8.fc-black-400.fs-title.lh-xs')) 
-                        return document.querySelector('.mb8.fc-black-400.fs-title.lh-xs').textContent.trim()
-                    return null
-                })
+                    const jobElement = document.querySelector('.mb8.fc-black-400.fs-title.lh-xs');
+                    return jobElement ? jobElement.textContent.trim() : 'NULL';
+                });
+
                 const ort = await page.evaluate(() => {
-                    if(document.querySelector('.wmx2.truncate')) 
-                        return document.querySelector('.wmx2.truncate').textContent.trim()
-                    return null
-                })
+                    const ortElement = document.querySelector('.wmx2.truncate');
+                    return ortElement ? ortElement.textContent.trim() : 'NULL';
+                });
 
-                
-                //check if user is saved
-                if(fs.existsSync(`Output/users-${tag}`)) {
-                    let savedUsers = []
-                    savedUsers = JSON.parse(fs.readFileSync(`Output/users-${tag}`))
-                    if(savedUsers.filter(e => e.username === username).length > 0) {
-                        // console.log(`Skipped adding user : ${username}`)
-                        continue
-                    }
+                // Überprüfen, ob Benutzer bereits existiert
+                const userExists = users.find(user => user.username === username && user.ort === ort && user.job === job);
+                if (!userExists) {
+                    // Benutzerdaten zum Array hinzufügen
+                    users.push({ username: username || 'NULL', ort: ort || 'NULL', job: job || 'NULL' });
                 }
-
-                //checks if user is from germany
-                // if(!ort === null) {
-                //     if(!ort.includes('Germany')) continue
-                // }
-                
-                if(users.filter(e => e.username === username).length > 0) continue
-                users.push({ username: username, ort: ort, job: job })
-                // console.log(count)
-                count++
-                if(count > 5) break;
-            }
-            if(count > 5) break;
-        }
-        
-        const path = `Output/users-${tag}`
-
-        //write info to designated file if there is any
-
-        if (!fs.existsSync('Output')) {
-            fs.mkdirSync('Output', { recursive: true });
-        }
-
-        console.log(users)
-        if(users.length == 0) {
-            console.log(`No (new) users found for ${tag}, continuing with next tag.`)
-            continue
-        }
-
-        if(fs.existsSync(path)) {
-            const fileContent = fs.readFileSync(path)
-            let JSONdataToWrite = []
-            JSONdataToWrite = JSON.parse(fileContent)
-
-            for(const user of users) {
-                JSONdataToWrite.push(user)
             }
 
-            const dataToWrite = JSON.stringify(JSONdataToWrite)
-
-            fs.writeFile(path, dataToWrite, (err) => {
-                if(err) throw err
-                console.log(`File edited! : ${path}`)
-            })
-        } else {
-            let counter = 0
-            let dataToWrite = '['
-            for(const user of users) {
-                if(counter>0) dataToWrite += ','
-                dataToWrite += JSON.stringify(user)
-                counter++
-            }
-            dataToWrite += ']'
-
-            fs.writeFile(path, dataToWrite, (err) => {
-                if(err) throw err
-                console.log(`File created! : ${path}`)
-            })
+            pageNum++;
         }
 
-        // await timeout(5000)
+        // Schreiben der Benutzerdaten in die CSV-Datei
+        const csvContent = users.map(user => `${user.username}, ${user.ort},${user.job}`).join('\n');
+        fs.writeFileSync(usersFilePath, csvContent);
+        console.log(`CSV-Datei wurde erfolgreich erstellt: ${usersFilePath}`);
     }
 
-    // close Browser after 5 sec
-    // timeout(3000)
-    await browser.close()
-})()
+    await browser.close();
+})();
