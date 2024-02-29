@@ -1,10 +1,23 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
+const { parse } = require('csv-parse');
+const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 
-const tagList = [
-    'apex',
-    'salesforce',
-];
+// Pfad zur CSV-Datei
+const csvFilePath = 'Tags.csv';
+
+
+const tagList = [];
+
+// CSV-Datei lesen und Spalte extrahieren
+fs.createReadStream(csvFilePath)
+  .pipe(parse({ delimiter: ',' }))
+  .on('data', (row) => {
+    // Füge den Wert der ersten Spalte zum Array hinzu
+    tagList.push(row[0]);
+  })
+
+
 
 console.log('start');
 
@@ -76,6 +89,7 @@ function writeToCSV(filePath, data) {
                     const ortElement = document.querySelector('.wmx2.truncate');
                     return ortElement ? ortElement.textContent.trim() : 'NULL';
                 });
+                if(ort.toLowerCase().includes('germany')) continue;
 
                 // Überprüfen, ob Benutzer bereits existiert
                 const userExists = users.find(user => user.username === username && user.ort === ort && user.job === job);
@@ -88,10 +102,26 @@ function writeToCSV(filePath, data) {
             pageNum++;
         }
 
-        // Schreiben der Benutzerdaten in die CSV-Datei
-        writeToCSV(usersFilePath, users);
-        console.log(`CSV-Datei wurde erfolgreich erstellt: ${usersFilePath}`);
-    }
+        const filePath = `Output/Metadaten_von_tag-${tag}.csv`
+
+        const csvWriter = createCsvWriter({
+            path: filePath,
+            header:[
+                { id: 'username', title: 'Username'},
+                { id: 'echtName', title: 'echt Name'},
+                { id: 'alter', title: 'Alter'},
+                { id: 'email', title: 'E-mail'},
+                { id: 'telefonnummer', title: 'Telefonnummer'},
+                { id: 'job', title: 'Job'},
+                { id: 'linkedIn', title: 'ggf LinkedIn Account'},
+            ],
+            fieldDelimiter: ';'
+        });
+        
+        csvWriter.writeRecords(users)
+        .then(() => console.log('Datei erstellt'));
+    
+    }   
 
     await browser.close();
 })();
