@@ -89,7 +89,7 @@ function writeToCSV(filePath, data) {
                 ele = timeElements[0]
 
                 // Test Scenarios
-                ele.innerHTML = "yesterday"
+                // ele.innerHTML = "yesterday"
                 // ele.innerHTML = "23 hours ago"
                 // ele.innerHTML = "Feb 22 at 11:58"
                 // ele.innerHTML = "Dec 13, 2023 at 21:51"
@@ -151,8 +151,6 @@ function writeToCSV(filePath, data) {
 
             console.log(lastDate)
             
-            lastDate.setYear(1969)
-
             // Save the last date
             if(!fs.existsSync('lastDates')) fs.mkdirSync('lastDates')
             const datePath = `LastDates/lastDate-${tag}.txt`
