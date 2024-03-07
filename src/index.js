@@ -3,6 +3,7 @@ const fs = require('fs');
 const { parse } = require('csv-parse');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 
+
 // Pfad zur CSV-Datei
 const csvFilePath = 'Tags.csv';
 
@@ -51,6 +52,8 @@ function writeToCSV(filePath, data) {
         let maxPageNum = 1;
         const amount = 36;
 
+        let dateBrake = 1
+
         await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`);
 
         maxPageNum = await page.evaluate(() => {
@@ -58,7 +61,7 @@ function writeToCSV(filePath, data) {
             return Number(pageButtons[10].textContent);
         });
 
-        while (pageNum <= maxPageNum && users.length < amount) {
+        while (pageNum <= maxPageNum && users.length < amount && dateBrake > 0) {
             await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`);
 
             const userLinks = await page.evaluate(() => {
@@ -66,14 +69,98 @@ function writeToCSV(filePath, data) {
                 const links = [];
                 for (const ele of userElements) {
                     if (String(ele.getAttribute('href')).includes('users'))
-                        links.push(ele.getAttribute('href'));
-                }
+                    links.push(ele.getAttribute('href'));
+            }
                 return links;
             });
 
+            let lastDate = new Date()
+        
+            const lastDateArray = await page.evaluate(() => {
+                const timeElements = document.querySelectorAll('time.s-user-card--time');
+                const date = new Date()
+                let dateArray
 
-         
-            const waitFor = delay => new Promise(resolve => setTimeout(resolve, delay));
+                const months = [
+                    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                  ];
+                
+                ele = timeElements[0]
+
+                // Test Scenarios
+                ele.innerHTML = "yesterday"
+                // ele.innerHTML = "23 hours ago"
+                // ele.innerHTML = "Feb 22 at 11:58"
+                // ele.innerHTML = "Dec 13, 2023 at 21:51"
+
+                const innerArray = ele.innerHTML.split(" ")
+
+                if(ele.innerHTML.includes('hour') || ele.innerHTML.includes('day')) {
+                    let hour = innerArray[0]
+
+                    if(date.getHours() < hour) {
+                        hour = 24+(date.getHours()-hour)
+                        date.setDate(date.getDate() - 1);
+                    }
+
+                    dateArray = [date.getDate(), Number(date.getMonth()), date.getFullYear(), Number(hour), date.getMinutes()]
+
+                    return dateArray
+                } else {
+
+                    if(String(innerArray[2]).length == 4) {
+                        const month = innerArray[0]
+                        const monthIndex = months.indexOf(month);
+
+                        const day = innerArray[1].replace(",", "")
+
+                        const year = innerArray[2]
+
+                        const timeString = innerArray[4]
+                        const hour = timeString.split(":")[0]
+                        const minutes = timeString.split(":")[1]
+
+                        dateArray = [Number(day), monthIndex, Number(year), Number(hour)+1, Number(minutes)]
+
+                        return dateArray
+                    }
+
+                    const month = innerArray[0]
+                    const monthIndex = months.indexOf(month);
+
+                    const day = innerArray[1]
+
+                    const timeString = innerArray[3]
+                    const hour = timeString.split(":")[0]
+                    const minutes = timeString.split(":")[1]
+
+                    dateArray = [Number(day), monthIndex, date.getFullYear(), Number(hour+2), Number(minutes)]
+                }
+
+                return dateArray;
+            });
+
+            console.log(lastDateArray)
+            
+            lastDate.setDate(lastDateArray[0])
+            lastDate.setMonth(lastDateArray[1])
+            lastDate.setYear(lastDateArray[2])
+            lastDate.setHours(lastDateArray[3])
+            lastDate.setMinutes(lastDateArray[4])
+
+            console.log(lastDate)
+            
+            lastDate.setYear(1969)
+
+            // Save the last date
+            if(!fs.existsSync('lastDates')) fs.mkdirSync('lastDates')
+            const datePath = `LastDates/lastDate-${tag}.txt`
+            fs.writeFile(datePath, String(lastDate),'utf8', err => {
+                if(err) console.error(err)
+            })
+
+
             for (const userLink of userLinks) {
                 await waitFor(5000);
                 if (users.length >= amount) break;
