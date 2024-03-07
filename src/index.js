@@ -86,7 +86,10 @@ function writeToCSV(filePath, data) {
                   ];
                 
                 ele = timeElements[0]
-                ele.innerHTML = "23 hours ago"
+
+                // Test Scenarios
+                ele.innerHTML = "yesterday"
+                // ele.innerHTML = "23 hours ago"
                 // ele.innerHTML = "Feb 22 at 11:58"
                 // ele.innerHTML = "Dec 13, 2023 at 21:51"
 
@@ -149,12 +152,12 @@ function writeToCSV(filePath, data) {
             
             lastDate.setYear(1969)
 
-            const todayDate = new Date()
-            if(todayDate > lastDate) {
-                dateBrake = -1;
-                console.log("today>last")
-                break;
-            }
+            // Save the last date
+            if(!fs.existsSync('lastDates')) fs.mkdirSync('lastDates')
+            const datePath = `LastDates/lastDate-${tag}.txt`
+            fs.writeFile(datePath, String(lastDate),'utf8', err => {
+                if(err) console.error(err)
+            })
 
 
             for (const userLink of userLinks) {
