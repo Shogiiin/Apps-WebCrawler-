@@ -49,6 +49,7 @@ function writeToCSV(filePath, data) {
 
         let pageNum = 1;
         let maxPageNum = 1;
+        const amount = 36;
 
         await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`);
 
@@ -57,7 +58,7 @@ function writeToCSV(filePath, data) {
             return Number(pageButtons[10].textContent);
         });
 
-        while (pageNum <= maxPageNum && users.length < 4) {
+        while (pageNum <= maxPageNum && users.length < amount) {
             await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`);
 
             const userLinks = await page.evaluate(() => {
@@ -70,8 +71,14 @@ function writeToCSV(filePath, data) {
                 return links;
             });
 
+
+         
+            const waitFor = delay => new Promise(resolve => setTimeout(resolve, delay));
             for (const userLink of userLinks) {
-                if (users.length >= 4) break;
+                await waitFor(5000);
+                if (users.length >= amount) break;
+                
+                if(Math.random(10)<2) await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`);
 
                 await page.goto(`https://stackoverflow.com/${userLink}`);
 
@@ -98,7 +105,6 @@ function writeToCSV(filePath, data) {
                     users.push({ username: username || 'NULL', ort: ort || 'NULL', job: job || 'NULL' });
                 }
             }
-
             pageNum++;
         }
 
@@ -116,6 +122,8 @@ function writeToCSV(filePath, data) {
                 { id: 'linkedIn', title: 'ggf LinkedIn Account'},
             ],
             fieldDelimiter: ';'
+
+            
         });
         
         csvWriter.writeRecords(users)
