@@ -44,14 +44,18 @@ function writeToCSV(filePath, data) {
     const page = await browser.newPage();
     await page.setViewport({width: 1200, height: 720});
 
+    await page.goto('https://stackoverflow.com/')
+    const acceptCookies = await page.waitForSelector('#onetrust-accept-btn-handler')
+    await page.click('#onetrust-accept-btn-handler')
+
     //Login
     await page.goto('https://stackoverflow.com/users/login?ssrc=head&returnurl=https%3a%2f%2fstackoverflow.com%2f')
-    // await page.type('input#email.s-input', 'AndiiiiWand@gmail.com')
-    // await page.type('input#password.flex--item.s-input', 'Fortnite123')
+
+    await page.waitForSelector('input#email.s-input')
 
     await page.evaluate(() => {
-        document.querySelector('input#email.s-input').value = ''
-        document.querySelector('input#password.flex--item.s-input').value = ''
+        document.querySelector('input#email.s-input').value = 'AndiiiiWand@gmail.com'
+        document.querySelector('input#password.flex--item.s-input').value = 'Fortnite123'
     })
 
     await Promise.all([
@@ -67,7 +71,7 @@ function writeToCSV(filePath, data) {
 
         let pageNum = 1;
         let maxPageNum = 1;
-        const amount = 36;
+        const amount = 1;
 
         let dateBrake = 1
 
@@ -78,85 +82,72 @@ function writeToCSV(filePath, data) {
             return Number(pageButtons[10].textContent);
         });
 
-        while (pageNum <= maxPageNum && users.length < amount && dateBrake > 0) {
-            await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`);
-
-            const userLinks = await page.evaluate(() => {
-                const userElements = document.querySelectorAll('.s-avatar');
-                const links = [];
-                for (const ele of userElements) {
-                    if (String(ele.getAttribute('href')).includes('users'))
-                    links.push(ele.getAttribute('href'));
-            }
-                return links;
-            });
-
-            let lastDate = new Date()
+        let lastDate = new Date()
         
-            const lastDateArray = await page.evaluate(() => {
-                const timeElements = document.querySelectorAll('time.s-user-card--time');
-                const date = new Date()
-                let dateArray
+        const lastDateArray = await page.evaluate(() => {
+            const timeElements = document.querySelectorAll('time.s-user-card--time');
+            const date = new Date()
+            let dateArray
 
-                const months = [
-                    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-                  ];
-                
-                ele = timeElements[0]
+            const months = [
+                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                ];
+            
+            ele = timeElements[0]
 
-                // Test Scenarios
-                // ele.innerHTML = "yesterday"
-                // ele.innerHTML = "23 hours ago"
-                // ele.innerHTML = "Feb 22 at 11:58"
-                // ele.innerHTML = "Dec 13, 2023 at 21:51"
+            // Test Scenarios
+            // ele.innerHTML = "yesterday"
+            // ele.innerHTML = "23 hours ago"
+            // ele.innerHTML = "Feb 22 at 11:58"
+            // ele.innerHTML = "Dec 13, 2023 at 21:51"
 
-                const innerArray = ele.innerHTML.split(" ")
+            const innerArray = ele.innerHTML.split(" ")
 
-                if(ele.innerHTML.includes('hour') || ele.innerHTML.includes('day')) {
-                    let hour = innerArray[0]
+            if(ele.innerHTML.includes('hour') || ele.innerHTML.includes('day')) {
+                let hour = innerArray[0]
 
-                    if(date.getHours() < hour) {
-                        hour = 24+(date.getHours()-hour)
-                        date.setDate(date.getDate() - 1);
-                    }
+                if(date.getHours() < hour) {
+                    hour = 24+(date.getHours()-hour)
+                    date.setDate(date.getDate() - 1);
+                }
 
-                    dateArray = [date.getDate(), Number(date.getMonth()), date.getFullYear(), Number(hour), date.getMinutes()]
+                dateArray = [date.getDate(), Number(date.getMonth()), date.getFullYear(), Number(hour), date.getMinutes()]
 
-                    return dateArray
-                } else {
+                return dateArray
+            } else {
 
-                    if(String(innerArray[2]).length == 4) {
-                        const month = innerArray[0]
-                        const monthIndex = months.indexOf(month);
-
-                        const day = innerArray[1].replace(",", "")
-
-                        const year = innerArray[2]
-
-                        const timeString = innerArray[4]
-                        const hour = timeString.split(":")[0]
-                        const minutes = timeString.split(":")[1]
-
-                        dateArray = [Number(day), monthIndex, Number(year), Number(hour)+1, Number(minutes)]
-
-                        return dateArray
-                    }
-
+                if(String(innerArray[2]).length == 4) {
                     const month = innerArray[0]
                     const monthIndex = months.indexOf(month);
 
-                    const day = innerArray[1]
+                    const day = innerArray[1].replace(",", "")
 
-                    const timeString = innerArray[3]
+                    const year = innerArray[2]
+
+                    const timeString = innerArray[4]
                     const hour = timeString.split(":")[0]
                     const minutes = timeString.split(":")[1]
 
-                    dateArray = [Number(day)+1, monthIndex, date.getFullYear(), Number(hour+2), Number(minutes)]
+                    dateArray = [Number(day), monthIndex, Number(year), Number(hour)+1, Number(minutes)]
+
+                    return dateArray
                 }
 
-                return dateArray;
-            });
+                const month = innerArray[0]
+                const monthIndex = months.indexOf(month);
+
+                const day = innerArray[1]
+
+                const timeString = innerArray[3]
+                const hour = timeString.split(":")[0]
+                const minutes = timeString.split(":")[1]
+
+                dateArray = [Number(day)+1, monthIndex, date.getFullYear(), Number(hour+2), Number(minutes)]
+            }
+
+            return dateArray;
+        });
 
             console.log(lastDateArray)
 
@@ -177,6 +168,19 @@ function writeToCSV(filePath, data) {
 
             // break
 
+        while (pageNum <= maxPageNum && users.length < amount && dateBrake > 0) {
+            await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`);
+
+            const userLinks = await page.evaluate(() => {
+                const userElements = document.querySelectorAll('.s-avatar');
+                const links = [];
+                for (const ele of userElements) {
+                    if (String(ele.getAttribute('href')).includes('users')) 
+                        links.push(ele.getAttribute('href'));
+            }
+                return links;
+            });
+
             for (const userLink of userLinks) {
                 if (users.length >= amount) break;
                 
@@ -186,6 +190,7 @@ function writeToCSV(filePath, data) {
                     const usernameElement = document.querySelector('.flex--item.mb12.fs-headline2.lh-xs');
                     return usernameElement ? usernameElement.textContent.trim() : null;
                 });
+                if(username.toLowerCase().includes('duhu')) continue;
 
                 const job = await page.evaluate(() => {
                     const jobElement = document.querySelector('.mb8.fc-black-400.fs-title.lh-xs');
@@ -196,7 +201,8 @@ function writeToCSV(filePath, data) {
                     const ortElement = document.querySelector('.wmx2.truncate');
                     return ortElement ? ortElement.textContent.trim() : 'NULL';
                 });
-                if(ort.toLowerCase().includes('germany')) continue;
+                if(ort != 'NULL') console.log(ort)
+                if(!ort.toLowerCase().includes('germany')) continue;
 
                 // Überprüfen, ob Benutzer bereits existiert
                 const userExists = users.find(user => user.username === username && user.ort === ort && user.job === job);
@@ -206,6 +212,7 @@ function writeToCSV(filePath, data) {
                 }
             }
             pageNum++;
+            console.log(users)
         }
 
         const filePath = `Output/Metadaten_von_tag-${tag}.csv`
