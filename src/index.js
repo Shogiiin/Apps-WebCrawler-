@@ -7,7 +7,7 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 // Pfad zur CSV-Datei
 const csvFilePath = 'Tags.csv';
 
-
+const today = new Date()
 const tagList = [];
 
 // CSV-Datei lesen und Spalte extrahieren
@@ -42,6 +42,23 @@ function writeToCSV(filePath, data) {
 (async () => {
     const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
+    await page.setViewport({width: 1200, height: 720});
+
+    //Login
+    await page.goto('https://stackoverflow.com/users/login?ssrc=head&returnurl=https%3a%2f%2fstackoverflow.com%2f')
+    // await page.type('input#email.s-input', 'AndiiiiWand@gmail.com')
+    // await page.type('input#password.flex--item.s-input', 'Fortnite123')
+
+    await page.evaluate(() => {
+        document.querySelector('input#email.s-input').value = ''
+        document.querySelector('input#password.flex--item.s-input').value = ''
+    })
+
+    await Promise.all([
+        page.click('#submit-button'),
+        page.waitForNavigation({ waitUntil: 'networkidle0' }),
+    ]);
+    // await page.click('#submit-button')
 
     // Durchlauf für jede Tagliste
     for(const tag of tagList) {
@@ -135,18 +152,18 @@ function writeToCSV(filePath, data) {
                     const hour = timeString.split(":")[0]
                     const minutes = timeString.split(":")[1]
 
-                    dateArray = [Number(day), monthIndex, date.getFullYear(), Number(hour+2), Number(minutes)]
+                    dateArray = [Number(day)+1, monthIndex, date.getFullYear(), Number(hour+2), Number(minutes)]
                 }
 
                 return dateArray;
             });
 
             console.log(lastDateArray)
-            
+
             lastDate.setDate(lastDateArray[0])
             lastDate.setMonth(lastDateArray[1])
             lastDate.setYear(lastDateArray[2])
-            lastDate.setHours(lastDateArray[3])
+            lastDate.setHours(lastDateArray[3] || today.getHours())
             lastDate.setMinutes(lastDateArray[4])
 
             console.log(lastDate)
