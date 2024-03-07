@@ -50,6 +50,7 @@ function writeToCSV(filePath, data) {
 
         let pageNum = 1;
         let maxPageNum = 1;
+        const amount = 36;
 
         let dateBrake = 1
 
@@ -60,7 +61,7 @@ function writeToCSV(filePath, data) {
             return Number(pageButtons[10].textContent);
         });
 
-        while (pageNum <= maxPageNum && users.length < 4 && dateBrake > 0) {
+        while (pageNum <= maxPageNum && users.length < amount && dateBrake > 0) {
             await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`);
 
             const userLinks = await page.evaluate(() => {
@@ -88,7 +89,7 @@ function writeToCSV(filePath, data) {
                 ele = timeElements[0]
 
                 // Test Scenarios
-                ele.innerHTML = "yesterday"
+                // ele.innerHTML = "yesterday"
                 // ele.innerHTML = "23 hours ago"
                 // ele.innerHTML = "Feb 22 at 11:58"
                 // ele.innerHTML = "Dec 13, 2023 at 21:51"
@@ -160,8 +161,8 @@ function writeToCSV(filePath, data) {
             // break
 
             for (const userLink of userLinks) {
-                if (users.length >= 4) break;
-
+                if (users.length >= amount) break;
+                
                 await page.goto(`https://stackoverflow.com/${userLink}`);
 
                 const username = await page.evaluate(() => {
@@ -187,7 +188,6 @@ function writeToCSV(filePath, data) {
                     users.push({ username: username || 'NULL', ort: ort || 'NULL', job: job || 'NULL' });
                 }
             }
-
             pageNum++;
         }
 
@@ -205,6 +205,8 @@ function writeToCSV(filePath, data) {
                 { id: 'linkedIn', title: 'ggf LinkedIn Account'},
             ],
             fieldDelimiter: ';'
+
+            
         });
         
         csvWriter.writeRecords(users)
