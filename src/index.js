@@ -160,11 +160,8 @@ function writeToCSV(filePath, data) {
 
 
             for (const userLink of userLinks) {
-                await waitFor(5000);
                 if (users.length >= amount) break;
                 
-                if(Math.random(10)<2) await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`);
-
                 await page.goto(`https://stackoverflow.com/${userLink}`);
 
                 const username = await page.evaluate(() => {
