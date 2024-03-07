@@ -150,8 +150,6 @@ function writeToCSV(filePath, data) {
 
             console.log(lastDate)
             
-            lastDate.setYear(1969)
-
             // Save the last date
             if(!fs.existsSync('lastDates')) fs.mkdirSync('lastDates')
             const datePath = `LastDates/lastDate-${tag}.txt`
@@ -159,6 +157,7 @@ function writeToCSV(filePath, data) {
                 if(err) console.error(err)
             })
 
+            // break
 
             for (const userLink of userLinks) {
                 if (users.length >= 4) break;
