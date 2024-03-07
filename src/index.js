@@ -67,6 +67,7 @@ function writeToCSV(filePath, data) {
     // Durchlauf für jede Tagliste
     for(const tag of tagList) {
         const usersFilePath = `Output/users-${tag}.csv`;
+        console.log(`Starting with - | ${tag} |`)
         let users = [];
 
         let pageNum = 1;
@@ -75,11 +76,14 @@ function writeToCSV(filePath, data) {
 
         let dateBrake = 1
 
-        await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`);
+        await page.goto(`https://stackoverflow.com/questions/tagged/${tag.toLowerCase()}?tab=newest&page=${pageNum}&pagesize=50`);
 
         maxPageNum = await page.evaluate(() => {
-            const pageButtons = document.querySelectorAll('.s-pagination--item');
-            return Number(pageButtons[10].textContent);
+            const pageButtons = document.querySelectorAll('a.s-pagination--item');
+            if(pageButtons.length < 10)
+                return pageButtons[pageButtons.length-2].textContent;
+            else
+                return pageButtons[pageButtons.length-3].textContent;
         });
 
         let lastDate = new Date()
@@ -149,16 +153,12 @@ function writeToCSV(filePath, data) {
             return dateArray;
         });
 
-            console.log(lastDateArray)
-
             lastDate.setDate(lastDateArray[0])
             lastDate.setMonth(lastDateArray[1])
             lastDate.setYear(lastDateArray[2])
             lastDate.setHours(lastDateArray[3] || today.getHours())
             lastDate.setMinutes(lastDateArray[4])
 
-            console.log(lastDate)
-            
             // Save the last date
             if(!fs.existsSync('lastDates')) fs.mkdirSync('lastDates')
             const datePath = `LastDates/lastDate-${tag}.txt`
@@ -169,7 +169,8 @@ function writeToCSV(filePath, data) {
             // break
 
         while (pageNum <= maxPageNum && users.length < amount && dateBrake > 0) {
-            await page.goto(`https://stackoverflow.com/questions/tagged/${tag}?tab=newest&page=${pageNum}&pagesize=50`);
+            await page.goto(`https://stackoverflow.com/questions/tagged/${tag.toLowerCase()}?tab=newest&page=${pageNum}&pagesize=50`);
+            console.log(`Now at Page : ${pageNum}`)
 
             const userLinks = await page.evaluate(() => {
                 const userElements = document.querySelectorAll('.s-avatar');
@@ -201,7 +202,7 @@ function writeToCSV(filePath, data) {
                     const ortElement = document.querySelector('.wmx2.truncate');
                     return ortElement ? ortElement.textContent.trim() : 'NULL';
                 });
-                if(ort != 'NULL') console.log(ort)
+                // if(ort != 'NULL') console.log(ort)
                 if(!ort.toLowerCase().includes('germany')) continue;
 
                 // Überprüfen, ob Benutzer bereits existiert
@@ -212,9 +213,12 @@ function writeToCSV(filePath, data) {
                 }
             }
             pageNum++;
-            console.log(users)
+            // console.log(users)
         }
 
+        console.log('Done with Tag')
+
+        if(!fs.existsSync('Output')) fs.mkdirSync('Output')
         const filePath = `Output/Metadaten_von_tag-${tag}.csv`
 
         const csvWriter = createCsvWriter({
@@ -234,7 +238,6 @@ function writeToCSV(filePath, data) {
         });
         
         csvWriter.writeRecords(users)
-        .then(() => console.log('Datei erstellt'));
     
     }   
 
