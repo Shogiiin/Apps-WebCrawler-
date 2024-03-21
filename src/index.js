@@ -72,7 +72,7 @@ function writeToCSV(filePath, data) {
 
         let pageNum = 1;
         let maxPageNum = 1;
-        const amount = 10;
+        const amount = 30;
 
         let dateBrake = 1
 
@@ -86,12 +86,12 @@ function writeToCSV(filePath, data) {
                 return Number(pageButtons[pageButtons.length-3].textContent);
         });
 
-        console.log(fs.readFileSync(`PageSafes/latestPageSafe-${tag}.json`, 'utf-8', (err) => {
-            console.error(err)
-        }))
+        // console.log(fs.readFileSync(`PageSafes/latestPageSafe-${tag}.json`, 'utf-8', (err) => {
+        //     console.error(err)
+        // }))
         if(fs.existsSync(`PageSafes/latestPageSafe-${tag}.json`)) {
             pageNum =JSON.parse(fs.readFileSync(`PageSafes/latestPageSafe-${tag}.json`, 'utf-8', (err) => {
-                console.error(err)
+                if(err) console.error(err)
             })).latestPage + 1
         }
         if(pageNum > maxPageNum) {
@@ -182,7 +182,7 @@ function writeToCSV(filePath, data) {
 
         //     // break
 
-        while (pageNum <= maxPageNum && users.length < amount && dateBrake > 0) {
+        while (pageNum <= maxPageNum && users.length < amount) {
             await page.goto(`https://stackoverflow.com/questions/tagged/${tag.toLowerCase()}?tab=newest&page=${pageNum}&pagesize=50`);
             console.log(`Now at Page : ${pageNum}`)
 
@@ -207,6 +207,35 @@ function writeToCSV(filePath, data) {
                 });
                 if(username.toLowerCase().includes('Elon Musk')) continue;
 
+                const linkedInabout = await page.evaluate(() => {
+
+                    const linkedInElement = document.querySelector('div.d-flex.gs4.gsx.ai-center');
+                    if(linkedInElement.textContent.includes('linkedin.com'))
+                        return linkedInElement.textContent.trim();
+
+                    const linkedInaboutElement = document.querySelector('div.s-prose.fc-black-500.js-about-me-content');
+                    if(linkedInaboutElement) {
+                        if(linkedInaboutElement.hasChildNodes()) {
+                            for(const ele of linkedInaboutElement.children) {
+                                if(!ele.tagName == "p") continue
+        
+                                if (ele.textContent.includes('linkedIn.com')) {
+                                    return ele.textContent
+                                }    else{
+                                    continue
+                                }
+                            }
+                        }
+                    }
+                    
+                    
+                
+                        return 'NULL';
+                    }); 
+                    console.log(linkedInabout)
+                    continue
+
+
                 const job = await page.evaluate(() => {
                     const jobElement = document.querySelector('.mb8.fc-black-400.fs-title.lh-xs');
                     return jobElement ? jobElement.textContent.trim() : 'NULL';
@@ -216,26 +245,43 @@ function writeToCSV(filePath, data) {
                     const ortElement = document.querySelector('.wmx2.truncate');
                     return ortElement ? ortElement.textContent.trim() : 'NULL';
                 });
+
+                const echtName = null
+                const alter = null
+                const email = null
+                const telefonnummer = null
+              
+
                 // if(ort != 'NULL') console.log(ort)
                 // if(!ort.toLowerCase().includes('germany')) continue;
 
                 
 
                 // Überprüfen, ob Benutzer bereits existiert
-                const userExists = users.find(user => user.username === username && user.ort === ort && user.job === job);
-                if (!userExists) {
-                    // Benutzerdaten zum Array hinzufügen
-                    users.push({ username: username || 'NULL', ort: ort || 'NULL', job: job || 'NULL' });
-                }
+                const userExists = users.find(user => user.username === username && user.ort === ort && user.job === job && user.echtName === echtName && user.alter === alter && user.email === email && user.telefonnummer === telefonnummer && user.linkedIn === linkedIn);
+                if (userExists) continue
+                // Benutzerdaten zum Array hinzufügen
+                users.push({ username: username || 'NULL', ort: ort || 'NULL', job: job || 'NULL' , echtName: echtName || 'NULL', alter: alter || 'NULL', email: email || 'NULL', telefonnummer: telefonnummer || 'NULL', linkedIn: linkedIn || 'NULL' });
             }
+            console.log(users.length)
+
 
             //safe latest page
             if(!fs.existsSync('PageSafes')) fs.mkdirSync('PageSafes')
             const pageDataPath = `PageSafes/latestPageSafe-${tag}.json`
 
-            const lastPageData = fs.readFile(pageDataPath, (err) => {
-                console.error(err)
-            })
+            
+            let lastPageData = null
+            if(!fs.existsSync(pageDataPath)) {
+                fs.writeFile(pageDataPath, JSON.stringify({tag: tag, maxPages: maxPageNum, latestPage: pageNum}), (err) => {
+                    console.error(err)
+                }) 
+            } else {
+                lastPageData = fs.readFile(pageDataPath, (err) => {
+                    if(err) console.error(err)
+                })
+            }
+            
             let pageSafe = null
             if(lastPageData) {
                 if(!latestPage > pageNum)
@@ -245,7 +291,7 @@ function writeToCSV(filePath, data) {
             }
 
             fs.writeFile(pageDataPath, JSON.stringify(pageSafe), (err) => {
-                console.error(err)
+                if(err) console.error(err)
             })
             
 
@@ -313,3 +359,8 @@ main();
 
     await browser.close();
 })();
+
+//---------------------------------------------------------------------------------------------LinkedIn-----------------------------------------------------------------------
+
+
+
