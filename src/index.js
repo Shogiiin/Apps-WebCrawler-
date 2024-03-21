@@ -81,92 +81,106 @@ function writeToCSV(filePath, data) {
         maxPageNum = await page.evaluate(() => {
             const pageButtons = document.querySelectorAll('a.s-pagination--item');
             if(pageButtons.length < 10)
-                return pageButtons[pageButtons.length-2].textContent;
+                return Number(pageButtons[pageButtons.length-2].textContent);
             else
-                return pageButtons[pageButtons.length-3].textContent;
+                return Number(pageButtons[pageButtons.length-3].textContent);
         });
 
-        let lastDate = new Date()
+        console.log(fs.readFileSync(`PageSafes/latestPageSafe-${tag}.json`, 'utf-8', (err) => {
+            console.error(err)
+        }))
+        if(fs.existsSync(`PageSafes/latestPageSafe-${tag}.json`)) {
+            pageNum =JSON.parse(fs.readFileSync(`PageSafes/latestPageSafe-${tag}.json`, 'utf-8', (err) => {
+                console.error(err)
+            })).latestPage + 1
+        }
+        if(pageNum > maxPageNum) {
+            continue
+        }
+
+
+
+        // let lastDate = new Date()
         
-        const lastDateArray = await page.evaluate(() => {
-            const timeElements = document.querySelectorAll('time.s-user-card--time');
-            const date = new Date()
-            let dateArray
+        // const lastDateArray = await page.evaluate(() => {
+        //     const timeElements = document.querySelectorAll('time.s-user-card--time');
+        //     const date = new Date()
+        //     let dateArray
 
-            const months = [
-                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-                ];
+        //     const months = [
+        //         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        //         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        //         ];
             
-            ele = timeElements[0]
+        //     ele = timeElements[0]
 
-            // Test Scenarios
-            // ele.innerHTML = "yesterday"
-            // ele.innerHTML = "23 hours ago"
-            // ele.innerHTML = "Feb 22 at 11:58"
-            // ele.innerHTML = "Dec 13, 2023 at 21:51"
+        //     // Test Scenarios
+        //     // ele.innerHTML = "yesterday"
+        //     // ele.innerHTML = "23 hours ago"
+        //     // ele.innerHTML = "Feb 22 at 11:58"
+        //     // ele.innerHTML = "Dec 13, 2023 at 21:51"
 
-            const innerArray = ele.innerHTML.split(" ")
+        //     const innerArray = ele.innerHTML.split(" ")
 
-            if(ele.innerHTML.includes('hour') || ele.innerHTML.includes('day')) {
-                let hour = innerArray[0]
+        //     if(ele.innerHTML.includes('hour') || ele.innerHTML.includes('day')) {
+        //         let hour = innerArray[0]
 
-                if(date.getHours() < hour) {
-                    hour = 24+(date.getHours()-hour)
-                    date.setDate(date.getDate() - 1);
-                }
+        //         if(date.getHours() < hour) {
+        //             hour = 24+(date.getHours()-hour)
+        //             date.setDate(date.getDate() - 1);
+        //         }
 
-                dateArray = [date.getDate(), Number(date.getMonth()), date.getFullYear(), Number(hour), date.getMinutes()]
+        //         dateArray = [date.getDate(), Number(date.getMonth()), date.getFullYear(), Number(hour), date.getMinutes()]
 
-                return dateArray
-            } else {
+        //         return dateArray
+        //     } else {
 
-                if(String(innerArray[2]).length == 4) {
-                    const month = innerArray[0]
-                    const monthIndex = months.indexOf(month);
+        //         if(String(innerArray[2]).length == 4) {
+        //             const month = innerArray[0]
+        //             const monthIndex = months.indexOf(month);
 
-                    const day = innerArray[1].replace(",", "")
+        //             const day = innerArray[1].replace(",", "")
 
-                    const year = innerArray[2]
+        //             const year = innerArray[2]
 
-                    const timeString = innerArray[4]
-                    const hour = timeString.split(":")[0]
-                    const minutes = timeString.split(":")[1]
+        //             const timeString = innerArray[4]
+        //             const hour = timeString.split(":")[0]
+        //             const minutes = timeString.split(":")[1]
 
-                    dateArray = [Number(day), monthIndex, Number(year), Number(hour)+1, Number(minutes)]
+        //             dateArray = [Number(day), monthIndex, Number(year), Number(hour)+1, Number(minutes)]
 
-                    return dateArray
-                }
+        //             return dateArray
+        //         }
 
-                const month = innerArray[0]
-                const monthIndex = months.indexOf(month);
+        //         const month = innerArray[0]
+        //         const monthIndex = months.indexOf(month);
 
-                const day = innerArray[1]
+        //         const day = innerArray[1]
 
-                const timeString = innerArray[3]
-                const hour = timeString.split(":")[0]
-                const minutes = timeString.split(":")[1]
+        //         const timeString = innerArray[3]
+        //         const hour = timeString.split(":")[0]
+        //         const minutes = timeString.split(":")[1]
 
-                dateArray = [Number(day)+1, monthIndex, date.getFullYear(), Number(hour+2), Number(minutes)]
-            }
+        //         dateArray = [Number(day)+1, monthIndex, date.getFullYear(), Number(hour+2), Number(minutes)]
+        //     }
 
-            return dateArray;
-        });
+        //     return dateArray;
+        // });
 
-            lastDate.setDate(lastDateArray[0])
-            lastDate.setMonth(lastDateArray[1])
-            lastDate.setYear(lastDateArray[2])
-            lastDate.setHours(lastDateArray[3] || today.getHours())
-            lastDate.setMinutes(lastDateArray[4])
+        //     lastDate.setDate(lastDateArray[0])
+        //     lastDate.setMonth(lastDateArray[1])
+        //     lastDate.setYear(lastDateArray[2])
+        //     lastDate.setHours(lastDateArray[3] || today.getHours())
+        //     lastDate.setMinutes(lastDateArray[4])
 
-            // Save the last date
-            if(!fs.existsSync('lastDates')) fs.mkdirSync('lastDates')
-            const datePath = `LastDates/lastDate-${tag}.txt`
-            fs.writeFile(datePath, String(lastDate),'utf8', err => {
-                if(err) console.error(err)
-            })
+        //     // Save the last date
+        //     if(!fs.existsSync('LastDates')) fs.mkdirSync('LastDates')
+        //     const datePath = `LastDates/lastDate-${tag}.txt`
+        //     fs.writeFile(datePath, String(lastDate),'utf8', err => {
+        //         if(err) console.error(err)
+        //     })
 
-            // break
+        //     // break
 
         while (pageNum <= maxPageNum && users.length < amount && dateBrake > 0) {
             await page.goto(`https://stackoverflow.com/questions/tagged/${tag.toLowerCase()}?tab=newest&page=${pageNum}&pagesize=50`);
@@ -191,7 +205,7 @@ function writeToCSV(filePath, data) {
                     const usernameElement = document.querySelector('.flex--item.mb12.fs-headline2.lh-xs');
                     return usernameElement ? usernameElement.textContent.trim() : null;
                 });
-                if(username.toLowerCase().includes('duhu')) continue;
+                if(username.toLowerCase().includes('Elon Musk')) continue;
 
                 const job = await page.evaluate(() => {
                     const jobElement = document.querySelector('.mb8.fc-black-400.fs-title.lh-xs');
@@ -205,6 +219,8 @@ function writeToCSV(filePath, data) {
                 // if(ort != 'NULL') console.log(ort)
                 // if(!ort.toLowerCase().includes('germany')) continue;
 
+                
+
                 // Überprüfen, ob Benutzer bereits existiert
                 const userExists = users.find(user => user.username === username && user.ort === ort && user.job === job);
                 if (!userExists) {
@@ -212,12 +228,35 @@ function writeToCSV(filePath, data) {
                     users.push({ username: username || 'NULL', ort: ort || 'NULL', job: job || 'NULL' });
                 }
             }
+
+            //safe latest page
+            if(!fs.existsSync('PageSafes')) fs.mkdirSync('PageSafes')
+            const pageDataPath = `PageSafes/latestPageSafe-${tag}.json`
+
+            const lastPageData = fs.readFile(pageDataPath, (err) => {
+                console.error(err)
+            })
+            let pageSafe = null
+            if(lastPageData) {
+                if(!latestPage > pageNum)
+                    pageSafe = {tag: lastPageData.tag, maxPages: lastPageData.maxPages, latestPage: lastPageData.latestPage};
+            } else {
+                pageSafe = {tag: tag, maxPages: maxPageNum, latestPage: pageNum}
+            }
+
+            fs.writeFile(pageDataPath, JSON.stringify(pageSafe), (err) => {
+                console.error(err)
+            })
+            
+
+
+
             pageNum++;
             // console.log(users)
         }
-
+        
         console.log('Done with Tag')
-
+        
         if(!fs.existsSync('Output')) fs.mkdirSync('Output')
         const filePath = `Output/Metadaten_von_tag-${tag}.csv`
 
