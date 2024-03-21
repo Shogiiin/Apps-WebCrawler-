@@ -72,7 +72,7 @@ function writeToCSV(filePath, data) {
 
         let pageNum = 1;
         let maxPageNum = 1;
-        const amount = 1;
+        const amount = 10;
 
         let dateBrake = 1
 
@@ -203,7 +203,7 @@ function writeToCSV(filePath, data) {
                     return ortElement ? ortElement.textContent.trim() : 'NULL';
                 });
                 // if(ort != 'NULL') console.log(ort)
-                if(!ort.toLowerCase().includes('germany')) continue;
+                // if(!ort.toLowerCase().includes('germany')) continue;
 
                 // Überprüfen, ob Benutzer bereits existiert
                 const userExists = users.find(user => user.username === username && user.ort === ort && user.job === job);
@@ -240,6 +240,37 @@ function writeToCSV(filePath, data) {
         csvWriter.writeRecords(users)
     
     }   
+//-----------------------------------------------------------------------------------------------
+ // Funktion zum Schreiben des Array-Inhalts in eine CSV-Datei
+function writeCSVFile(outputFile, dataArray, callback) {
+    const contentToWrite = dataArray.map(row => Object.values(row).join(',')).join('\n');
+    fs.writeFile(outputFile, contentToWrite, 'utf8', (err) => {
+        if (err) {
+            return callback(err);
+        }
+        callback(null);
+    });
+}
+
+// Array mit Inhalt, der in die Ausgangs-CSV-Datei geschrieben werden soll
+const users = [];
+
+// Name der Ausgangs-CSV-Datei festlegen
+const outputFileName = 'test.csv';
+
+// Hauptfunktion, die die Schreibfunktion aufruft
+function main() {
+    writeCSVFile(outputFileName, users, (err) => {
+        if (err) {
+            console.error('Fehler beim Schreiben in die Ausgangs-CSV-Datei:', err);
+            return;
+        }
+        console.log('Array-Inhalt wurde erfolgreich in die Ausgangs-CSV-Datei geschrieben.');
+    });
+}
+
+// Hauptprogramm starten
+main();
 
     await browser.close();
 })();
