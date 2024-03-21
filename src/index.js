@@ -250,6 +250,7 @@ function writeToCSV(filePath, data) {
                 const alter = null
                 const email = null
                 const telefonnummer = null
+                let points = 0
               
 
                 // if(ort != 'NULL') console.log(ort)
@@ -261,7 +262,7 @@ function writeToCSV(filePath, data) {
                 const userExists = users.find(user => user.username === username && user.ort === ort && user.job === job && user.echtName === echtName && user.alter === alter && user.email === email && user.telefonnummer === telefonnummer && user.linkedIn === linkedIn);
                 if (userExists) continue
                 // Benutzerdaten zum Array hinzufügen
-                users.push({ username: username || 'NULL', ort: ort || 'NULL', job: job || 'NULL' , echtName: echtName || 'NULL', alter: alter || 'NULL', email: email || 'NULL', telefonnummer: telefonnummer || 'NULL', linkedIn: linkedIn || 'NULL' });
+                users.push({ username: username || 'NULL', ort: ort || 'NULL', job: job || 'NULL' , echtName: echtName || 'NULL', alter: alter || 'NULL', email: email || 'NULL', telefonnummer: telefonnummer || 'NULL', linkedIn: linkedIn || 'NULL', points: points || 0});
             }
             console.log(users.length)
 
@@ -316,6 +317,7 @@ function writeToCSV(filePath, data) {
                 { id: 'telefonnummer', title: 'Telefonnummer'},
                 { id: 'job', title: 'Job'},
                 { id: 'linkedIn', title: 'ggf LinkedIn Account'},
+                { id: 'points', title: 'Punkte'},
             ],
             fieldDelimiter: ';'
 
@@ -325,37 +327,6 @@ function writeToCSV(filePath, data) {
         csvWriter.writeRecords(users)
     
     }   
-//-----------------------------------------------------------------------------------------------
- // Funktion zum Schreiben des Array-Inhalts in eine CSV-Datei
-function writeCSVFile(outputFile, dataArray, callback) {
-    const contentToWrite = dataArray.map(row => Object.values(row).join(',')).join('\n');
-    fs.writeFile(outputFile, contentToWrite, 'utf8', (err) => {
-        if (err) {
-            return callback(err);
-        }
-        callback(null);
-    });
-}
-
-// Array mit Inhalt, der in die Ausgangs-CSV-Datei geschrieben werden soll
-const users = [];
-
-// Name der Ausgangs-CSV-Datei festlegen
-const outputFileName = 'test.csv';
-
-// Hauptfunktion, die die Schreibfunktion aufruft
-function main() {
-    writeCSVFile(outputFileName, users, (err) => {
-        if (err) {
-            console.error('Fehler beim Schreiben in die Ausgangs-CSV-Datei:', err);
-            return;
-        }
-        console.log('Array-Inhalt wurde erfolgreich in die Ausgangs-CSV-Datei geschrieben.');
-    });
-}
-
-// Hauptprogramm starten
-main();
 
     await browser.close();
 })();
