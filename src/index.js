@@ -220,8 +220,10 @@ function writeToCSV(filePath, data) {
                                 if(!ele.tagName == "p") continue
         
                                 if (ele.textContent.includes('linkedIn.com')) {
+                                    console.log('GEFUNDEN!!!!!!')
                                     return ele.textContent
                                 }    else{
+                                    return ele.textContent
                                     continue
                                 }
                             }
