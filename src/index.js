@@ -24,18 +24,34 @@ fs.createReadStream(csvFilePath)
 if(!fs.existsSync("./src/config.json")) {
     fs.writeFileSync("./src/config.json", JSON.stringify(
         {
+            userPassword: "PASSWORD_HERE",
             userAmountPerTag: 30,
             openVisualWindow: false,
             checkIfUserIsGerman: false,
             logUserLengthAfterTag: false,
             updateStatusInConsole: false,
         }
-    ))
+        ))
+    } 
+    
+    async function resetConfig() {
+        console.error("Something is wrong with the config. \nFixing bug now.");
+        fs.unlinkSync("./src/config.json");
+        fs.writeFileSync("./src/config.json", JSON.stringify(
+            {
+            userPassword: "PASSWORD_HERE",
+            userAmountPerTag: 30,
+            openVisualWindow: false,
+            checkIfUserIsGerman: false,
+            logUserLengthAfterTag: false,
+            updateStatusInConsole: false,
+        }
+    ));
+    console.log("Bug fixed")
 }
 
-
 if(JSON.parse(fs.readFileSync("./src/config.json")).updateStatusInConsole === true) {
-    console.log('start');
+    console.log('Initializing Webcrawler');
 }
 
 
@@ -57,9 +73,18 @@ function writeToCSV(filePath, data) {
 
 // Hauptfunktion
 (async () => {
+
+    const configContent = JSON.parse(fs.readFileSync("./src/config.json"))
+    if(!(typeof(configContent.userPassword) === typeof("ayo"))) await resetConfig();
+    if(!(typeof(configContent.userAmountPerTag) === typeof(1))) await resetConfig();
+    if(!(typeof(configContent.openVisualWindow) === typeof(true))) await resetConfig();
+    if(!(typeof(configContent.checkIfUserIsGerman) === typeof(true))) await resetConfig();
+    if(!(typeof(configContent.logUserLengthAfterTag) === typeof(true))) await resetConfig();
+    if(!(typeof(configContent.updateStatusInConsole) === typeof(true))) await resetConfig();
+
     const browser = await puppeteer.launch({ headless: !JSON.parse(fs.readFileSync("./src/config.json")).openVisualWindow });
     const page = await browser.newPage();
-    await page.setViewport({width: 1200, height: 720});
+    await page.setViewport({width: 1920, height: 1080});
 
     await page.goto('https://stackoverflow.com/')
     const acceptCookies = await page.waitForSelector('#onetrust-accept-btn-handler')
@@ -70,10 +95,11 @@ function writeToCSV(filePath, data) {
 
     await page.waitForSelector('input#email.s-input')
 
-    await page.evaluate(() => {
+    const pwp = configContent.userPassword
+    await page.evaluate(pwp => {
         document.querySelector('input#email.s-input').value = 'AndiiiiWand@gmail.com'
-        document.querySelector('input#password.flex--item.s-input').value = 'Fortnite123'
-    })
+        document.querySelector('input#password.flex--item.s-input').value = pwp
+    }, pwp)
 
     await Promise.all([
         page.click('#submit-button'),
@@ -93,6 +119,7 @@ function writeToCSV(filePath, data) {
         let pageNum = 1;
         let maxPageNum = 1;
         let amount = JSON.parse(fs.readFileSync("./src/config.json")).userAmountPerTag;
+        if(amount < 0) amount = 9999999999;
 
         await page.goto(`https://stackoverflow.com/questions/tagged/${tag.toLowerCase()}?tab=newest&page=${pageNum}&pagesize=50`);
 
