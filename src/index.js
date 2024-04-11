@@ -20,7 +20,40 @@ fs.createReadStream(csvFilePath)
 
 
 
-console.log('start');
+// Check Config JSON
+if(!fs.existsSync("./src/config.json")) {
+    fs.writeFileSync("./src/config.json", JSON.stringify(
+        {
+            userPassword: "PASSWORD_HERE",
+            userAmountPerTag: 30,
+            openVisualWindow: false,
+            checkIfUserIsGerman: false,
+            logUserLengthAfterTag: false,
+            updateStatusInConsole: false,
+        }
+        ))
+    } 
+    
+    async function resetConfig() {
+        console.error("Something is wrong with the config. \nFixing bug now.");
+        fs.unlinkSync("./src/config.json");
+        fs.writeFileSync("./src/config.json", JSON.stringify(
+            {
+            userPassword: "PASSWORD_HERE",
+            userAmountPerTag: 30,
+            openVisualWindow: false,
+            checkIfUserIsGerman: false,
+            logUserLengthAfterTag: false,
+            updateStatusInConsole: false,
+        }
+    ));
+    console.log("Bug fixed")
+}
+
+if(JSON.parse(fs.readFileSync("./src/config.json")).updateStatusInConsole === true) {
+    console.log('Initializing Webcrawler');
+}
+
 
 // Funktion zum Schreiben in die CSV-Datei
 function writeToCSV(filePath, data) {
@@ -40,9 +73,18 @@ function writeToCSV(filePath, data) {
 
 // Hauptfunktion
 (async () => {
-    const browser = await puppeteer.launch({ headless: false });
+
+    const configContent = JSON.parse(fs.readFileSync("./src/config.json"))
+    if(!(typeof(configContent.userPassword) === typeof("ayo"))) await resetConfig();
+    if(!(typeof(configContent.userAmountPerTag) === typeof(1))) await resetConfig();
+    if(!(typeof(configContent.openVisualWindow) === typeof(true))) await resetConfig();
+    if(!(typeof(configContent.checkIfUserIsGerman) === typeof(true))) await resetConfig();
+    if(!(typeof(configContent.logUserLengthAfterTag) === typeof(true))) await resetConfig();
+    if(!(typeof(configContent.updateStatusInConsole) === typeof(true))) await resetConfig();
+
+    const browser = await puppeteer.launch({ headless: !JSON.parse(fs.readFileSync("./src/config.json")).openVisualWindow });
     const page = await browser.newPage();
-    await page.setViewport({width: 1200, height: 720});
+    await page.setViewport({width: 1920, height: 1080});
 
     await page.goto('https://stackoverflow.com/')
     const acceptCookies = await page.waitForSelector('#onetrust-accept-btn-handler')
@@ -53,10 +95,11 @@ function writeToCSV(filePath, data) {
 
     await page.waitForSelector('input#email.s-input')
 
-    await page.evaluate(() => {
+    const pwp = configContent.userPassword
+    await page.evaluate(pwp => {
         document.querySelector('input#email.s-input').value = 'AndiiiiWand@gmail.com'
-        document.querySelector('input#password.flex--item.s-input').value = 'Fortnite123'
-    })
+        document.querySelector('input#password.flex--item.s-input').value = pwp
+    }, pwp)
 
     await Promise.all([
         page.click('#submit-button'),
@@ -67,14 +110,16 @@ function writeToCSV(filePath, data) {
     // Durchlauf für jede Tagliste
     for(const tag of tagList) {
         const usersFilePath = `Output/users-${tag}.csv`;
-        console.log(`Starting with - | ${tag} |`)
+        if(JSON.parse(fs.readFileSync("./src/config.json")).updateStatusInConsole === true) {
+            console.log(`Starting with - | ${tag} |`);
+        }
+        
         let users = [];
 
         let pageNum = 1;
         let maxPageNum = 1;
-        const amount = 30;
-
-        let dateBrake = 1
+        let amount = JSON.parse(fs.readFileSync("./src/config.json")).userAmountPerTag;
+        if(amount < 0) amount = 9999999999;
 
         await page.goto(`https://stackoverflow.com/questions/tagged/${tag.toLowerCase()}?tab=newest&page=${pageNum}&pagesize=50`);
 
@@ -86,9 +131,11 @@ function writeToCSV(filePath, data) {
                 return Number(pageButtons[pageButtons.length-3].textContent);
         });
 
-        // console.log(fs.readFileSync(`PageSafes/latestPageSafe-${tag}.json`, 'utf-8', (err) => {
-        //     console.error(err)
-        // }))
+        if(fs.existsSync(`PageSafes/latestPageSafe-${tag}.json`)) {
+            if(fs.readFileSync(`PageSafes/latestPageSafe-${tag}.json`, 'utf-8', (err) => { if(err) console.error(err); }).length === 0) {
+                fs.unlinkSync(`PageSafes/latestPageSafe-${tag}.json`, 'utf-8', (err) => { if(err) console.error(err); });
+            }
+        }
         if(fs.existsSync(`PageSafes/latestPageSafe-${tag}.json`)) {
             pageNum =JSON.parse(fs.readFileSync(`PageSafes/latestPageSafe-${tag}.json`, 'utf-8', (err) => {
                 if(err) console.error(err)
@@ -98,93 +145,11 @@ function writeToCSV(filePath, data) {
             continue
         }
 
-
-
-        // let lastDate = new Date()
-        
-        // const lastDateArray = await page.evaluate(() => {
-        //     const timeElements = document.querySelectorAll('time.s-user-card--time');
-        //     const date = new Date()
-        //     let dateArray
-
-        //     const months = [
-        //         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        //         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-        //         ];
-            
-        //     ele = timeElements[0]
-
-        //     // Test Scenarios
-        //     // ele.innerHTML = "yesterday"
-        //     // ele.innerHTML = "23 hours ago"
-        //     // ele.innerHTML = "Feb 22 at 11:58"
-        //     // ele.innerHTML = "Dec 13, 2023 at 21:51"
-
-        //     const innerArray = ele.innerHTML.split(" ")
-
-        //     if(ele.innerHTML.includes('hour') || ele.innerHTML.includes('day')) {
-        //         let hour = innerArray[0]
-
-        //         if(date.getHours() < hour) {
-        //             hour = 24+(date.getHours()-hour)
-        //             date.setDate(date.getDate() - 1);
-        //         }
-
-        //         dateArray = [date.getDate(), Number(date.getMonth()), date.getFullYear(), Number(hour), date.getMinutes()]
-
-        //         return dateArray
-        //     } else {
-
-        //         if(String(innerArray[2]).length == 4) {
-        //             const month = innerArray[0]
-        //             const monthIndex = months.indexOf(month);
-
-        //             const day = innerArray[1].replace(",", "")
-
-        //             const year = innerArray[2]
-
-        //             const timeString = innerArray[4]
-        //             const hour = timeString.split(":")[0]
-        //             const minutes = timeString.split(":")[1]
-
-        //             dateArray = [Number(day), monthIndex, Number(year), Number(hour)+1, Number(minutes)]
-
-        //             return dateArray
-        //         }
-
-        //         const month = innerArray[0]
-        //         const monthIndex = months.indexOf(month);
-
-        //         const day = innerArray[1]
-
-        //         const timeString = innerArray[3]
-        //         const hour = timeString.split(":")[0]
-        //         const minutes = timeString.split(":")[1]
-
-        //         dateArray = [Number(day)+1, monthIndex, date.getFullYear(), Number(hour+2), Number(minutes)]
-        //     }
-
-        //     return dateArray;
-        // });
-
-        //     lastDate.setDate(lastDateArray[0])
-        //     lastDate.setMonth(lastDateArray[1])
-        //     lastDate.setYear(lastDateArray[2])
-        //     lastDate.setHours(lastDateArray[3] || today.getHours())
-        //     lastDate.setMinutes(lastDateArray[4])
-
-        //     // Save the last date
-        //     if(!fs.existsSync('LastDates')) fs.mkdirSync('LastDates')
-        //     const datePath = `LastDates/lastDate-${tag}.txt`
-        //     fs.writeFile(datePath, String(lastDate),'utf8', err => {
-        //         if(err) console.error(err)
-        //     })
-
-        //     // break
-
         while (pageNum <= maxPageNum && users.length < amount) {
             await page.goto(`https://stackoverflow.com/questions/tagged/${tag.toLowerCase()}?tab=newest&page=${pageNum}&pagesize=50`);
-            console.log(`Now at Page : ${pageNum}`)
+            if(JSON.parse(fs.readFileSync("./src/config.json")).updateStatusInConsole === true) {
+                console.log(`Now at Page : ${pageNum}`);
+            }
 
             const userLinks = await page.evaluate(() => {
                 const userElements = document.querySelectorAll('.s-avatar');
@@ -205,7 +170,7 @@ function writeToCSV(filePath, data) {
                     const usernameElement = document.querySelector('.flex--item.mb12.fs-headline2.lh-xs');
                     return usernameElement ? usernameElement.textContent.trim() : null;
                 });
-                if(username.toLowerCase().includes('Elon Musk')) continue;
+                if(!username? username.length : 0 === 0) if(username.toLowerCase().includes('elon musk')) continue;
 
                 const linkedInabout = await page.evaluate(() => {
 
@@ -234,8 +199,6 @@ function writeToCSV(filePath, data) {
                 
                         return 'NULL';
                     }); 
-                    console.log(linkedInabout)
-                    continue
 
 
                 const job = await page.evaluate(() => {
@@ -248,15 +211,17 @@ function writeToCSV(filePath, data) {
                     return ortElement ? ortElement.textContent.trim() : 'NULL';
                 });
 
-                const echtName = null
-                const alter = null
-                const email = null
-                const telefonnummer = null
-                let points = 0
+                const echtName = null;
+                const alter = null;
+                const email = null;
+                const telefonnummer = null;
+                let points = 0;
+                const linkedIn = linkedInabout;
               
 
-                // if(ort != 'NULL') console.log(ort)
-                // if(!ort.toLowerCase().includes('germany')) continue;
+                if(JSON.parse(fs.readFileSync("./src/config.json")).checkIfUserIsGerman === true) {
+                    if(!ort.toLowerCase().includes('germany')) continue;
+                }
 
                 
 
@@ -266,8 +231,10 @@ function writeToCSV(filePath, data) {
                 // Benutzerdaten zum Array hinzufügen
                 users.push({ username: username || 'NULL', ort: ort || 'NULL', job: job || 'NULL' , echtName: echtName || 'NULL', alter: alter || 'NULL', email: email || 'NULL', telefonnummer: telefonnummer || 'NULL', linkedIn: linkedIn || 'NULL', points: points || 0});
             }
-            console.log(users.length)
 
+            if(JSON.parse(fs.readFileSync("./src/config.json")).logUserLengthAfterTag === true) {
+                console.log(users.length);
+            }
 
             //safe latest page
             if(!fs.existsSync('PageSafes')) fs.mkdirSync('PageSafes')
@@ -301,10 +268,11 @@ function writeToCSV(filePath, data) {
 
 
             pageNum++;
-            // console.log(users)
         }
         
-        console.log('Done with Tag')
+        if(JSON.parse(fs.readFileSync("./src/config.json")).updateStatusInConsole === true) {
+            console.log('Done with Tag');
+        }
         
         if(!fs.existsSync('Output')) fs.mkdirSync('Output')
         const filePath = `Output/Metadaten_von_tag-${tag}.csv`
@@ -332,8 +300,3 @@ function writeToCSV(filePath, data) {
 
     await browser.close();
 })();
-
-//---------------------------------------------------------------------------------------------LinkedIn-----------------------------------------------------------------------
-
-
-
