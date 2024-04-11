@@ -1,4 +1,5 @@
 node_modules
 Output
-lastDates
+LastDates
 PageSafes
+src/config.json
