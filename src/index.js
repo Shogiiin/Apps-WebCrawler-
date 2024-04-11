@@ -24,8 +24,8 @@ fs.createReadStream(csvFilePath)
 if(!fs.existsSync("./src/config.json")) {
     fs.writeFileSync("./src/config.json", JSON.stringify(
         {
-            openVisualWindow: false,
             userAmountPerTag: 30,
+            openVisualWindow: false,
             checkIfUserIsGerman: false,
             logUserLengthAfterTag: false,
             updateStatusInConsole: false,
