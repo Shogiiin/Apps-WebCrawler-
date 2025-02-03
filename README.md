@@ -26,8 +26,8 @@ Ein leistungsstarker Webcrawler zur automatisierten Datenerfassung von Stack Ove
 1. **Node.js installieren**: [Download Node.js](https://nodejs.org)
 2. **Projekt einrichten**:
    ```sh
-   git clone https://github.com/dein-repo/webcrawler.git
-   cd webcrawler/src
+   git@github.com:Shogiiin/Apps-WebCrawler-.git
+   cd Apps-WebCrawler
    npm install puppeteer csv-writer csv-parse
    ```
 3. **Starten**:
